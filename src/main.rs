@@ -1,6 +1,5 @@
 use scraper::{Html, Selector};
-use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime};
-use chrono::format::ParseError;
+use chrono::NaiveDateTime;
 use chrono::Utc;
 
 #[tokio::main]
