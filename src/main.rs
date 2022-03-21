@@ -2,11 +2,20 @@ use scraper::{Html, Selector};
 use chrono::NaiveDateTime;
 use chrono::Utc;
 use tokio::time::{sleep, Duration};
+use std::fmt::{Display, Formatter};
 
 #[derive(Eq, PartialEq, Debug, Clone)]
 struct PhoneCall {
   who: String,
   when: NaiveDateTime
+}
+
+impl Display for PhoneCall {
+  fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+      write!(f, "☎️ {} - {}", 
+                self.who, 
+                self.when.format("around %l %p on %-d %b").to_string())
+  }
 }
 
 async fn get_calls() -> Result<Vec<PhoneCall>, Box<dyn std::error::Error>> {
@@ -76,7 +85,7 @@ async fn monitor_calls() {
       if last_call == None {
         println!("Print all calls");
         for phone_call in &phone_calls {
-          println!("{:?}", phone_call);
+          println!("{}", phone_call);
         }
 
         if let Some(call) = Some(phone_calls.last().cloned()) {
@@ -93,7 +102,7 @@ async fn monitor_calls() {
             } else {
               println!("Print one or more recent call(s)");
               for phone_call in &phone_calls[index_element..] {
-                println!("{:?}", phone_call);
+                println!("{}", phone_call);
               }
     
               if let Some(call) = Some(phone_calls.last().cloned()) {
@@ -103,7 +112,7 @@ async fn monitor_calls() {
         } else {
           println!("Print all calls (last call not found)");
           for phone_call in &phone_calls {
-            println!("{:?}", phone_call);
+            println!("{}", phone_call);
           }
   
           if let Some(call) = Some(phone_calls.last().cloned()) {
