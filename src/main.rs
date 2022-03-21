@@ -2,8 +2,7 @@ use scraper::{Html, Selector};
 use chrono::NaiveDateTime;
 use chrono::Utc;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn list_calls() -> Result<(), Box<dyn std::error::Error>> {
   let resp = reqwest::get("http://192.168.1.1/callLog.lp").await?.text().await?;
 
   let document = Html::parse_document(&resp);
@@ -29,6 +28,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
   }
+
+  Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+  list_calls().await?;
 
   Ok(())
 }
