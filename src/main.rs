@@ -75,20 +75,37 @@ async fn monitor_calls() {
 
       if last_call == None {
         println!("Print all calls");
+        for phone_call in &phone_calls {
+          println!("{:?}", phone_call);
+        }
+
         if let Some(call) = Some(phone_calls.last().cloned()) {
           last_call = call;
         }
       } else {
-        let index_element = phone_calls
+        if let Some(index_element) = phone_calls
           .iter()
-          .position(|x| x == last_call.as_mut().unwrap());
+          .position(|x| x == last_call.as_mut().unwrap()) {
+            println!("{:?}", index_element);
 
-        println!("{:?}", index_element);
-
-        if index_element.unwrap() == phone_calls.len() - 1 {
-          println!("No new calls.");
+            if index_element == phone_calls.len() - 1 {
+              println!("No new calls.");
+            } else {
+              println!("Print one or more recent call(s)");
+              for phone_call in &phone_calls[index_element..] {
+                println!("{:?}", phone_call);
+              }
+    
+              if let Some(call) = Some(phone_calls.last().cloned()) {
+                last_call = call;
+              }
+            }
         } else {
-          println!("One or more recent call(s)");
+          println!("Print all calls (last call not found)");
+          for phone_call in &phone_calls {
+            println!("{:?}", phone_call);
+          }
+  
           if let Some(call) = Some(phone_calls.last().cloned()) {
             last_call = call;
           }
