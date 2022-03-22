@@ -183,7 +183,7 @@ async fn monitor_calls() {
           println!("{}", phone_call);
         }
 
-        if let Some(call) = Some(new_calls.last().cloned()) {
+        if let Some(call) = Some(new_calls.first().cloned()) {
           last_call = call;
         }
       } else {
