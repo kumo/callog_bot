@@ -71,6 +71,102 @@ async fn list_recent_calls() {
   println!("There are {} recent phone calls.", recent_phone_calls.len());
 }
 
+fn get_new_calls(last_call: &Option<PhoneCall>, phone_calls: Vec<PhoneCall>) -> Option<Vec<PhoneCall>> {
+  // There are no phone calls, so there are no new calls
+  if phone_calls.is_empty() {
+    return None;
+  }
+
+  // There is no last phone call, so all of the calls are new calls
+  if let None = last_call {
+    return Some(phone_calls);
+  }
+
+  // The last call is the same as the other calls
+  if phone_calls.first() == last_call.as_ref() {
+    return None;
+  }
+
+  if let Some(index_element) = phone_calls.clone()
+    .into_iter()
+    .position(|x| &x == last_call.as_ref().unwrap()) {
+      return Some(phone_calls[0..index_element].to_vec());
+  } else {
+    return Some(phone_calls);
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  // Note this useful idiom: importing names from outer (for mod tests) scope.
+  use super::*;
+
+  #[test]
+  fn test_no_calls() {
+      assert_eq!(get_new_calls(&None, Vec::new()), None);
+  }
+
+  #[test]
+  fn test_no_last_call() {
+    let new_call: PhoneCall = PhoneCall{who: "new call".to_string(), when: Utc::now().naive_utc()};
+
+    let calls: Vec<PhoneCall> = vec![new_call.clone()];
+
+    assert_eq!(get_new_calls(&None, calls.clone()), Some(calls));
+  }
+
+  #[test]
+  fn test_no_new_calls() {
+    let last_call: PhoneCall = PhoneCall{who: "last call".to_string(), when: Utc::now().naive_utc()};
+
+    assert_eq!(get_new_calls(&Some(last_call), Vec::new()), None);
+  }
+
+  #[test]
+  fn test_last_call_not_found() {
+    let last_call: PhoneCall = PhoneCall{who: "last call".to_string(), when: Utc::now().naive_utc()};
+
+    let new_call_1: PhoneCall = PhoneCall{who: "new call 1".to_string(), when: Utc::now().naive_utc()};
+    let new_call_2: PhoneCall = PhoneCall{who: "new call 2".to_string(), when: Utc::now().naive_utc()};
+    let calls: Vec<PhoneCall> = vec![new_call_1.clone(), new_call_2.clone()];
+
+    assert_eq!(get_new_calls(&Some(last_call), calls.clone()), Some(calls));
+  }
+
+  #[test]
+  fn test_last_call_is_last_call() {
+    let last_call: PhoneCall = PhoneCall{who: "last call".to_string(), when: Utc::now().naive_utc()};
+    let old_call: PhoneCall = PhoneCall{who: "old call".to_string(), when: Utc::now().naive_utc()};
+
+    let calls: Vec<PhoneCall> = vec![last_call.clone(), old_call.clone()];
+
+    assert_eq!(get_new_calls(&Some(last_call), calls.clone()), None);
+  }
+
+  #[test]
+  fn test_last_call_is_recent_call() {
+    let last_call: PhoneCall = PhoneCall{who: "last call".to_string(), when: Utc::now().naive_utc()};
+    let new_call_1: PhoneCall = PhoneCall{who: "new call 1".to_string(), when: Utc::now().naive_utc()};
+    let new_call_2: PhoneCall = PhoneCall{who: "new call 2".to_string(), when: Utc::now().naive_utc()};
+    let old_call_1: PhoneCall = PhoneCall{who: "old call 1".to_string(), when: Utc::now().naive_utc()};
+    let old_call_2: PhoneCall = PhoneCall{who: "old call 2".to_string(), when: Utc::now().naive_utc()};
+
+    let calls: Vec<PhoneCall> = vec![new_call_1.clone(), new_call_2.clone(), last_call.clone(), old_call_1.clone(), old_call_2.clone()];
+
+    assert_eq!(get_new_calls(&Some(last_call), calls.clone()), Some(vec![new_call_1.clone(), new_call_2.clone()]));
+  }
+
+  #[test]
+  fn test_last_call_is_oldest_call() {
+    let last_call: PhoneCall = PhoneCall{who: "last call".to_string(), when: Utc::now().naive_utc()};
+    let new_call: PhoneCall = PhoneCall{who: "new call".to_string(), when: Utc::now().naive_utc()};
+
+    let calls: Vec<PhoneCall> = vec![new_call.clone(), last_call.clone()];
+
+    assert_eq!(get_new_calls(&Some(last_call.clone()), calls), Some(vec![new_call.clone()]));
+  }
+}
+
 async fn monitor_calls() {
   println!("Starting - monitor_calls");
 
@@ -82,43 +178,16 @@ async fn monitor_calls() {
       println!("Checking calls");
       let phone_calls:Vec<PhoneCall> = download_calls().await.unwrap();
 
-      if last_call == None {
-        println!("Print all calls");
-        for phone_call in &phone_calls {
+      if let Some(new_calls) = get_new_calls(&last_call, phone_calls) {
+        for phone_call in &new_calls {
           println!("{}", phone_call);
         }
 
-        if let Some(call) = Some(phone_calls.last().cloned()) {
+        if let Some(call) = Some(new_calls.last().cloned()) {
           last_call = call;
         }
       } else {
-        if let Some(index_element) = phone_calls
-          .iter()
-          .position(|x| x == last_call.as_mut().unwrap()) {
-            println!("{:?}", index_element);
-
-            if index_element == phone_calls.len() - 1 {
-              println!("No new calls.");
-            } else {
-              println!("Print one or more recent call(s)");
-              for phone_call in &phone_calls[index_element..] {
-                println!("{}", phone_call);
-              }
-    
-              if let Some(call) = Some(phone_calls.last().cloned()) {
-                last_call = call;
-              }
-            }
-        } else {
-          println!("Print all calls (last call not found)");
-          for phone_call in &phone_calls {
-            println!("{}", phone_call);
-          }
-  
-          if let Some(call) = Some(phone_calls.last().cloned()) {
-            last_call = call;
-          }
-        }
+        println!("No new calls.");
       }
   }
   // println!("HI")
