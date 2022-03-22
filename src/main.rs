@@ -179,8 +179,13 @@ async fn monitor_calls() {
       let phone_calls:Vec<PhoneCall> = download_calls().await.unwrap();
 
       if let Some(new_calls) = get_new_calls(&last_call, phone_calls) {
-        for phone_call in &new_calls {
-          println!("{}", phone_call);
+        if last_call == None {
+          // TODO Show today's calls or the last one
+          println!("{}", new_calls.first().unwrap());
+        } else {
+          for phone_call in &new_calls {
+            println!("{}", phone_call);
+          }  
         }
 
         if let Some(call) = Some(new_calls.first().cloned()) {
