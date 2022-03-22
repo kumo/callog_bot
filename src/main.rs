@@ -18,7 +18,7 @@ impl Display for PhoneCall {
   }
 }
 
-async fn get_calls() -> Result<Vec<PhoneCall>, Box<dyn std::error::Error>> {
+async fn download_calls() -> Result<Vec<PhoneCall>, Box<dyn std::error::Error>> {
   let mut phone_calls:Vec<PhoneCall> = Vec::new();
 
   let resp = reqwest::get("http://192.168.1.1/callLog.lp").await?.text().await?;
@@ -53,7 +53,7 @@ async fn get_calls() -> Result<Vec<PhoneCall>, Box<dyn std::error::Error>> {
 }
 
 async fn list_all_calls() {
-  let phone_calls:Vec<PhoneCall> = get_calls().await.unwrap();
+  let phone_calls:Vec<PhoneCall> = download_calls().await.unwrap();
 
   if phone_calls.is_empty() {
     println!("There are no phone calls in memory.")
@@ -63,7 +63,7 @@ async fn list_all_calls() {
 }
 
 async fn list_recent_calls() {
-  let recent_phone_calls:Vec<PhoneCall> = get_calls().await.unwrap()
+  let recent_phone_calls:Vec<PhoneCall> = download_calls().await.unwrap()
     .into_iter()
     .filter(|phone_call| Utc::now().naive_utc().signed_duration_since(phone_call.when).num_days() < 1)
     .collect();
@@ -80,7 +80,7 @@ async fn monitor_calls() {
       sleep(Duration::from_secs(6)).await;
 
       println!("Checking calls");
-      let phone_calls:Vec<PhoneCall> = get_calls().await.unwrap();
+      let phone_calls:Vec<PhoneCall> = download_calls().await.unwrap();
 
       if last_call == None {
         println!("Print all calls");
