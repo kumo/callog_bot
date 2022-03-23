@@ -3,6 +3,8 @@ use chrono::NaiveDateTime;
 use chrono::Utc;
 use tokio::time::{sleep, Duration};
 use std::fmt::{Display, Formatter};
+use teloxide::{prelude2::*};
+use dotenv;
 
 #[derive(Eq, PartialEq, Debug, Clone)]
 struct PhoneCall {
@@ -167,7 +169,7 @@ mod tests {
   }
 }
 
-async fn monitor_calls() {
+async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
   println!("Starting - monitor_calls");
 
   let mut last_call:Option<PhoneCall> = None;
@@ -182,6 +184,7 @@ async fn monitor_calls() {
         if last_call == None {
           // TODO Show today's calls or the last one
           println!("{}", new_calls.first().unwrap());
+          bot.send_message(chat_id, format!("{}", new_calls.first().unwrap())).await.unwrap();
         } else {
           for phone_call in &new_calls {
             println!("{}", phone_call);
@@ -200,9 +203,14 @@ async fn monitor_calls() {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+  dotenv::dotenv().ok();
+
+  let chat_id: i64 = envmnt::get_parse("CHAT_ID").unwrap();
+
+  let bot = Bot::from_env().auto_send();
+
   let tasks = vec![
-    tokio::spawn(async move { monitor_calls().await }),
-    tokio::spawn(async move { list_all_calls().await }),
+    tokio::spawn(async move { monitor_calls(bot.clone(), chat_id).await }),
   ];
 
   futures::future::join_all(tasks).await;
