@@ -178,7 +178,7 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
       sleep(Duration::from_secs(6)).await;
 
       println!("Checking calls");
-      let phone_calls:Vec<PhoneCall> = download_calls().await.unwrap();
+      let phone_calls:Vec<PhoneCall> = download_calls().await.unwrap_or(Vec::new());
 
       if let Some(new_calls) = get_new_calls(&last_call, phone_calls) {
         if last_call == None {
