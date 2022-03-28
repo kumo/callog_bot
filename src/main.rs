@@ -201,7 +201,7 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
         }
       }
 
-      if let Some(call) = Some(latest_calls.first().cloned()) {
+      if let Some(call) = Some(latest_calls.last().cloned()) {
         last_call = call;
       }
     } else {
