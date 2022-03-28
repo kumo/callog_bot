@@ -20,13 +20,13 @@ impl Display for PhoneCall {
   }
 }
 
-async fn download_calls() -> Result<Vec<PhoneCall>, Box<dyn std::error::Error>> {
+async fn download_calls() -> Option<Vec<PhoneCall>> {
   let mut phone_calls:Vec<PhoneCall> = Vec::new();
 
-  let resp = reqwest::get("http://192.168.1.1/callLog.lp").await?.text().await?;
+  let resp = reqwest::get("http://192.168.1.1/callLog.lp").await.ok()?.text().await.ok()?;
 
   let document = Html::parse_document(&resp);
-  let selector = Selector::parse(r#"table.edittable > tbody > tr"#).unwrap();
+  let selector = Selector::parse(r#"table.edittable > tbody > tr"#).ok()?;
 
   // iterate over elements matching our selector
   // we skip the first two, because the header is in the body
@@ -41,7 +41,7 @@ async fn download_calls() -> Result<Vec<PhoneCall>, Box<dyn std::error::Error>> 
       // println!("{:?}", tds[7]); // raw date
 
       // TODO: I am not sure that the phone number is in UTC
-      let date_time = NaiveDateTime::parse_from_str(tds[7], "%H:%M:%S - %d:%m:%Y").unwrap();
+      let date_time = NaiveDateTime::parse_from_str(tds[7], "%H:%M:%S - %d:%m:%Y").ok()?;
       // println!("Parsed date and time is: {}", date_time);
       // let diff = Utc::now().naive_utc() - date_time;
       // println!("Phone call was {} minutes ago", diff.num_minutes());
@@ -51,7 +51,7 @@ async fn download_calls() -> Result<Vec<PhoneCall>, Box<dyn std::error::Error>> 
     }
   }
 
-  return Ok(phone_calls);
+  return Some(phone_calls);
 }
 
 async fn list_all_calls() {
@@ -178,27 +178,29 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
       sleep(Duration::from_secs(6)).await;
 
       println!("Checking calls");
-      let phone_calls:Vec<PhoneCall> = download_calls().await.unwrap_or(Vec::new());
 
-      if let Some(new_calls) = get_new_calls(&last_call, phone_calls) {
-        if last_call == None {
-          // TODO Show today's calls or the last one
-          println!("{}", new_calls.first().unwrap());
-          bot.send_message(chat_id, format!("{}", new_calls.first().unwrap())).await.unwrap();
-        } else {
-          for phone_call in &new_calls {
-            println!("{}", phone_call);
-          }  
-        }
+    let latest_calls = download_calls()
+        .await
+        .and_then(|calls| get_new_calls(&last_call, calls));
 
-        if let Some(call) = Some(new_calls.first().cloned()) {
-          last_call = call;
+    if let Some(latest_calls) = latest_calls {
+      println!("There are new calls");
+
+      for phone_call in &latest_calls {
+        println!("{}", phone_call);
+
+        if let Err(_) = bot.send_message(chat_id, format!("{}", phone_call)).await {
+          println!("Couldn't send message.");
         }
-      } else {
-        println!("No new calls.");
       }
+
+      if let Some(call) = Some(latest_calls.first().cloned()) {
+        last_call = call;
+      }
+    } else {
+      println!("No calls found.")
+    }
   }
-  // println!("HI")
 }
 
 #[tokio::main]
