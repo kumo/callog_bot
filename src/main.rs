@@ -183,7 +183,7 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
   let mut last_call:Option<PhoneCall> = None;
 
   loop {
-    sleep(Duration::from_secs(6)).await;
+    sleep(Duration::from_secs(60)).await;
 
     println!("Checking calls");
 
