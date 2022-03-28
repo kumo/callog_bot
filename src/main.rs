@@ -189,9 +189,10 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
         .await
         .and_then(|calls| get_new_calls(&last_call, calls));
 
-    if let Some(latest_calls) = latest_calls {
+    if let Some(mut latest_calls) = latest_calls {
       println!("There are new calls");
 
+      latest_calls.reverse();
       for phone_call in &latest_calls {
         println!("{}", phone_call);
 
