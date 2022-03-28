@@ -14,9 +14,9 @@ struct PhoneCall {
 
 impl Display for PhoneCall {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-      write!(f, "☎️ {} - {}", 
-                self.who, 
-                self.when.format("around %l %p on %-d %b").to_string())
+    write!(f, "☎️ {} - {}", 
+              self.who, 
+              self.when.format("around %l %p on %-d %b").to_string())
   }
 }
 
@@ -175,9 +175,9 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
   let mut last_call:Option<PhoneCall> = None;
 
   loop {
-      sleep(Duration::from_secs(6)).await;
+    sleep(Duration::from_secs(6)).await;
 
-      println!("Checking calls");
+    println!("Checking calls");
 
     let latest_calls = download_calls()
         .await
