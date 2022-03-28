@@ -14,9 +14,17 @@ struct PhoneCall {
 
 impl Display for PhoneCall {
   fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-    write!(f, "☎️ {} - {}", 
-              self.who, 
-              self.when.format("around %l %p on %-d %b").to_string())
+    let diff = Utc::now().naive_utc() - self.when;
+    // println!("Phone call was {} minutes ago", diff.num_minutes());
+
+    if diff.num_hours() > 1 {
+      write!(f, "☎️ {}\n👉 {}", 
+      self.who, 
+      self.when.format("around %l%P on %-d %b").to_string())
+    } else {
+      write!(f, "☎️ {}", 
+      self.who)
+    } 
   }
 }
 
