@@ -3,8 +3,9 @@ use chrono::NaiveDateTime;
 use chrono::Utc;
 use tokio::time::{sleep, Duration};
 use std::fmt::{Display, Formatter};
-use teloxide::{prelude2::*};
+use teloxide::{prelude2::*, utils::command::BotCommand};
 use dotenv;
+use std::error::Error;
 
 #[derive(Eq, PartialEq, Debug, Clone)]
 struct PhoneCall {
@@ -26,6 +27,19 @@ impl Display for PhoneCall {
       self.who)
     } 
   }
+}
+
+#[derive(BotCommand, Clone)]
+#[command(rename = "lowercase", description = "These commands are supported:")]
+enum Command {
+    #[command(description = "display this text.")]
+    Help,
+    #[command(description = "display today's calls.")]
+    Today,
+    #[command(description = "display recent calls.")]
+    Recent,
+    #[command(description = "display all calls.")]
+    All,
 }
 
 async fn download_calls() -> Option<Vec<PhoneCall>> {
@@ -62,23 +76,58 @@ async fn download_calls() -> Option<Vec<PhoneCall>> {
   return Some(phone_calls);
 }
 
-async fn list_all_calls() {
-  let phone_calls:Vec<PhoneCall> = download_calls().await.unwrap();
-
-  if phone_calls.is_empty() {
-    println!("There are no phone calls in memory.")
+async fn list_all_calls(bot: AutoSend<Bot>, chat_id: i64) {
+  if let Some(mut phone_calls) = download_calls().await {
+    if phone_calls.is_empty() {
+      if let Err(_) = bot.send_message(chat_id, "There are no recent calls in memory -- was the modem recently rebooted?").await {
+        println!("Couldn't send list_all_calls message.");
+      }
   } else {
-    println!("There are {} phone calls.", phone_calls.len());
+      println!("There are new calls");
+
+      phone_calls.reverse();
+      for phone_call in &phone_calls {
+        println!("{}", phone_call);
+
+        if let Err(_) = bot.send_message(chat_id, format!("{}", phone_call)).await {
+          println!("Couldn't send list_all_calls message.");
+        }
+      }
+
+      println!("There are {} phone calls.", phone_calls.len());
+    }  
+  } else {
+    println!("There are no phone calls in memory.");
+
+    if let Err(_) = bot.send_message(chat_id, "Problem getting latest calls!").await {
+      println!("Couldn't send list_all_calls message.");
+    }
   }
 }
 
-async fn list_recent_calls() {
-  let recent_phone_calls:Vec<PhoneCall> = download_calls().await.unwrap()
+async fn list_recent_calls(bot: AutoSend<Bot>, chat_id: i64) {
+  let mut recent_phone_calls:Vec<PhoneCall> = download_calls().await
+    .unwrap_or(Vec::new())
     .into_iter()
     .filter(|phone_call| Utc::now().naive_utc().signed_duration_since(phone_call.when).num_days() < 1)
     .collect();
 
   println!("There are {} recent phone calls.", recent_phone_calls.len());
+
+  if recent_phone_calls.is_empty() {
+    if let Err(_) = bot.send_message(chat_id, "There are no recent calls in memory -- was the modem recently rebooted?").await {
+      println!("Couldn't send list_recent_calls message.");
+    }
+  } else {
+    recent_phone_calls.reverse();
+    for phone_call in &recent_phone_calls {
+      println!("{}", phone_call);
+
+      if let Err(_) = bot.send_message(chat_id, format!("{}", phone_call)).await {
+        println!("Couldn't send list_recent_calls message.");
+      }
+    }
+  }
 }
 
 fn get_new_calls(last_call: &Option<PhoneCall>, phone_calls: Vec<PhoneCall>) -> Option<Vec<PhoneCall>> {
@@ -197,7 +246,7 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
         println!("{}", phone_call);
 
         if let Err(_) = bot.send_message(chat_id, format!("{}", phone_call)).await {
-          println!("Couldn't send message.");
+          println!("Couldn't send monitor_calls message.");
         }
       }
 
@@ -212,6 +261,38 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
   }
 }
 
+async fn answer(
+  bot: AutoSend<Bot>,
+  message: Message,
+  command: Command,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
+
+  let chat_id: i64 = envmnt::get_parse("CHAT_ID").unwrap();
+
+  if message.chat.id != chat_id {
+    bot.send_message(message.chat.id, "I shouldn't speak to strangers.").await?;
+  }
+
+  match command {
+      Command::Help => {
+        if let Err(_) = bot.send_message(chat_id, Command::descriptions()).await {
+          println!("Couldn't send answer message.");
+        }
+      },
+      Command::Today => {
+        list_recent_calls(bot.clone(), chat_id).await;
+      },
+      Command::Recent => {
+        list_recent_calls(bot.clone(), chat_id).await;
+      },
+      Command::All => {
+        list_all_calls(bot.clone(), chat_id).await;
+      }
+  };
+
+  Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
   dotenv::dotenv().ok();
@@ -219,9 +300,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
   let chat_id: i64 = envmnt::get_parse("CHAT_ID").unwrap();
 
   let bot = Bot::from_env().auto_send();
+  let handler = teloxide::repls2::commands_repl(bot.clone(), answer, Command::ty());
 
   let tasks = vec![
     tokio::spawn(async move { monitor_calls(bot.clone(), chat_id).await }),
+    tokio::spawn(async move { handler.await }),
   ];
 
   futures::future::join_all(tasks).await;
