@@ -97,7 +97,7 @@ async fn list_all_calls(bot: AutoSend<Bot>, chat_id: i64) {
       println!("There are {} phone calls.", phone_calls.len());
     }  
   } else {
-    println!("There are no phone calls in memory.");
+    println!("There might be no phone calls in memory.");
 
     if let Err(_) = bot.send_message(chat_id, "Problem getting latest calls!").await {
       println!("Couldn't send list_all_calls message.");
