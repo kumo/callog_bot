@@ -271,6 +271,7 @@ async fn answer(
 
   if message.chat.id != chat_id {
     bot.send_message(message.chat.id, "I shouldn't speak to strangers.").await?;
+    println!("I shouldn't talk to strangers: {}", message.chat.id);
   }
 
   match command {
