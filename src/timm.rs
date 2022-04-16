@@ -1,6 +1,6 @@
 use chrono::{NaiveDateTime, Utc};
-use scraper::{Html, Selector};
 use std::fmt::{Display, Formatter};
+use visdom::Vis;
 
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub struct PhoneCall {
@@ -26,9 +26,23 @@ impl Display for PhoneCall {
     }
 }
 
-pub async fn download_calls() -> Option<Vec<PhoneCall>> {
-    let mut phone_calls: Vec<PhoneCall> = Vec::new();
+impl TryFrom<&[String]> for PhoneCall {
+    type Error = ();
 
+    fn try_from(value: &[String]) -> Result<Self, Self::Error> {
+        let who = value[0].to_string();
+        if let Ok(when) = NaiveDateTime::parse_from_str(&value[3], "%H:%M:%S - %d:%m:%Y") {
+            Ok(PhoneCall {
+                who: who,
+                when: when,
+            })
+        } else {
+            Err(())
+        }
+    }
+}
+
+pub async fn download_calls() -> Option<Vec<PhoneCall>> {
     let resp = reqwest::get("http://192.168.1.1/callLog.lp")
         .await
         .ok()?
@@ -36,34 +50,16 @@ pub async fn download_calls() -> Option<Vec<PhoneCall>> {
         .await
         .ok()?;
 
-    let document = Html::parse_document(&resp);
-    let selector = Selector::parse(r#"table.edittable > tbody > tr"#).ok()?;
+    let tds = Vis::load(resp)
+        .ok()?
+        .find("table.edittable > tr > td.fontSize");
 
-    // iterate over elements matching our selector
-    // we skip the first two, because the header is in the body
-    // and the second line draws the border
-    for row in document.select(&selector).skip(2) {
-        // grab the table cells and place into a vector
-        let tds = row.text().collect::<Vec<_>>();
-
-        // the table contains rows with no elements, due to bad spacing
-        if tds.len() > 7 && tds[5] == "Ingresso" {
-            // println!("{:?}", tds[1]); // phone number
-            // println!("{:?}", tds[7]); // raw date
-
-            // TODO: I am not sure that the phone number is in UTC
-            let date_time = NaiveDateTime::parse_from_str(tds[7], "%H:%M:%S - %d:%m:%Y").ok()?;
-            // println!("Parsed date and time is: {}", date_time);
-            // let diff = Utc::now().naive_utc() - date_time;
-            // println!("Phone call was {} minutes ago", diff.num_minutes());
-
-            let phone_call: PhoneCall = PhoneCall {
-                who: tds[1].to_string(),
-                when: date_time,
-            };
-            phone_calls.push(phone_call);
-        }
-    }
+    let phone_calls = tds
+        .map(|_index, ele| String::from(Vis::dom(ele).text()))
+        .chunks_exact(5)
+        .filter(|data| data[2] == "Ingresso")
+        .filter_map(|data| PhoneCall::try_from(data).ok())
+        .collect();
 
     return Some(phone_calls);
 }
