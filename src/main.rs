@@ -18,6 +18,8 @@ enum Command {
     Recent,
     #[command(description = "display all calls.")]
     All,
+    #[command(description = "display current speed.")]
+    Speed,
 }
 
 async fn list_all_calls(bot: AutoSend<Bot>, chat_id: i64) {
@@ -149,6 +151,16 @@ async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
     }
 }
 
+async fn list_speed(bot: AutoSend<Bot>, chat_id: i64) {
+    if let Some(stats) = timm::download_stats().await {
+        if let Err(_) = bot.send_message(chat_id, format!("{}", stats)).await {
+            println!("Couldn't send list_speed message.");
+        }
+    } else {
+        println!("Problem getting stats");
+    }
+}
+
 async fn answer(
     bot: AutoSend<Bot>,
     message: Message,
@@ -176,6 +188,9 @@ async fn answer(
         }
         Command::All => {
             list_all_calls(bot.clone(), chat_id).await;
+        }
+        Command::Speed => {
+            list_speed(bot.clone(), chat_id).await;
         }
     };
 
