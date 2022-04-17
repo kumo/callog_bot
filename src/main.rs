@@ -4,6 +4,10 @@ use std::error::Error;
 use teloxide::{prelude2::*, utils::command::BotCommand};
 use tokio::time::{sleep, Duration};
 
+extern crate pretty_env_logger;
+#[macro_use]
+extern crate log;
+
 mod timm;
 use timm::PhoneCall;
 
@@ -32,30 +36,30 @@ async fn list_all_calls(bot: AutoSend<Bot>, chat_id: i64) {
                 )
                 .await
             {
-                println!("Couldn't send list_all_calls message.");
+                warn!("Couldn't send list_all_calls message.");
             }
         } else {
-            println!("There are new calls");
+            debug!("There are new calls");
 
             phone_calls.reverse();
             for phone_call in &phone_calls {
-                println!("{}", phone_call);
+                debug!("{}", phone_call);
 
                 if let Err(_) = bot.send_message(chat_id, format!("{}", phone_call)).await {
-                    println!("Couldn't send list_all_calls message.");
+                    warn!("Couldn't send list_all_calls message.");
                 }
             }
 
-            println!("There are {} phone calls.", phone_calls.len());
+            debug!("There are {} phone calls.", phone_calls.len());
         }
     } else {
-        println!("There might be no phone calls in memory.");
+        debug!("There might be no phone calls in memory.");
 
         if let Err(_) = bot
             .send_message(chat_id, "Problem getting latest calls!")
             .await
         {
-            println!("Couldn't send list_all_calls message.");
+            warn!("Couldn't send list_all_calls message.");
         }
     }
 }
@@ -74,7 +78,7 @@ async fn list_recent_calls(bot: AutoSend<Bot>, chat_id: i64) {
         })
         .collect();
 
-    println!("There are {} recent phone calls.", recent_phone_calls.len());
+    debug!("There are {} recent phone calls.", recent_phone_calls.len());
 
     if recent_phone_calls.is_empty() {
         if let Err(_) = bot
@@ -84,41 +88,41 @@ async fn list_recent_calls(bot: AutoSend<Bot>, chat_id: i64) {
             )
             .await
         {
-            println!("Couldn't send list_recent_calls message.");
+            warn!("Couldn't send list_recent_calls message.");
         }
     } else {
         recent_phone_calls.reverse();
         for phone_call in &recent_phone_calls {
-            println!("{}", phone_call);
+            debug!("{}", phone_call);
 
             if let Err(_) = bot.send_message(chat_id, format!("{}", phone_call)).await {
-                println!("Couldn't send list_recent_calls message.");
+                warn!("Couldn't send list_recent_calls message.");
             }
         }
     }
 }
 
 async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
-    println!("Starting - monitor_calls");
+    info!("Starting - monitor_calls");
 
     let mut last_call: Option<PhoneCall> = None;
 
     loop {
-        println!("Checking calls");
+        info!("Checking calls");
 
         let latest_calls = timm::download_calls()
             .await
             .and_then(|calls| timm::get_new_calls(&last_call, calls));
 
         if let Some(mut latest_calls) = latest_calls {
-            println!("There are new calls");
+            debug!("There are new calls");
 
             latest_calls.reverse();
             for phone_call in &latest_calls {
-                println!("{}", phone_call);
+                debug!("{}", phone_call);
 
                 if let Err(_) = bot.send_message(chat_id, format!("{}", phone_call)).await {
-                    println!("Couldn't send monitor_calls message.");
+                    warn!("Couldn't send monitor_calls message.");
                 }
             }
 
@@ -126,7 +130,7 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
                 last_call = call;
             }
         } else {
-            println!("No calls found.")
+            warn!("No calls found.")
         }
 
         sleep(Duration::from_secs(60)).await;
@@ -134,10 +138,10 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
 }
 
 async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
-    println!("Starting - monitor_speed");
+    info!("Starting - monitor_speed");
 
     loop {
-        println!("Checking stats");
+        info!("Checking stats");
 
         if let Some(stats) = timm::download_stats().await {
             let ratio = stats.download / stats.upload;
@@ -150,7 +154,7 @@ async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
                     )
                     .await
                 {
-                    println!("Couldn't send monitor_speed message.");
+                    warn!("Couldn't send monitor_speed message.");
                 }
             } else if ratio < 2 {
                 if let Err(_) = bot
@@ -160,12 +164,12 @@ async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
                     )
                     .await
                 {
-                    println!("Couldn't send monitor_speed message.");
+                    warn!("Couldn't send monitor_speed message.");
                 }
             } else {
             }
         } else {
-            println!("Problem getting stats");
+            warn!("Problem getting stats");
         }
 
         sleep(Duration::from_secs(10 * 60)).await;
@@ -175,10 +179,10 @@ async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
 async fn list_speed(bot: AutoSend<Bot>, chat_id: i64) {
     if let Some(stats) = timm::download_stats().await {
         if let Err(_) = bot.send_message(chat_id, format!("{}", stats)).await {
-            println!("Couldn't send list_speed message.");
+            warn!("Couldn't send list_speed message.");
         }
     } else {
-        println!("Problem getting stats");
+        warn!("Problem getting stats");
     }
 }
 
@@ -192,13 +196,13 @@ async fn answer(
     if message.chat.id != chat_id {
         bot.send_message(message.chat.id, "I shouldn't speak to strangers.")
             .await?;
-        println!("I shouldn't talk to strangers: {}", message.chat.id);
+        debug!("I shouldn't talk to strangers: {}", message.chat.id);
     }
 
     match command {
         Command::Help => {
             if let Err(_) = bot.send_message(chat_id, Command::descriptions()).await {
-                println!("Couldn't send answer message.");
+                warn!("Couldn't send answer message.");
             }
         }
         Command::Today => {
@@ -220,6 +224,7 @@ async fn answer(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    pretty_env_logger::init();
     dotenv::dotenv().ok();
 
     let chat_id: i64 = envmnt::get_parse("CHAT_ID").unwrap();

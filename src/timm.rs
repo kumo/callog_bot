@@ -122,14 +122,14 @@ pub async fn download_stats() -> Option<LineStats> {
     let tds = Vis::load(home_resp)
         .ok()?
         .find("table.tablecontainttbl > tr > td.fcolor");
-    println!("There are {} matching cells.", tds.length());
+    debug!("There are {} matching cells.", tds.length());
 
     let texts = tds.map(|_index, ele| String::from(Vis::dom(ele).text()));
 
     // check the external IP and download/upload speeds
-    println!("IP: {}", texts[0]);
-    println!("Download: {}", texts[1]);
-    println!("Upload: {}", texts[2]);
+    debug!("IP: {}", texts[0]);
+    debug!("Download: {}", texts[1]);
+    debug!("Upload: {}", texts[2]);
 
     return LineStats::try_from(texts).ok();
 
