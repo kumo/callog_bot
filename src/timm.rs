@@ -34,6 +34,7 @@ impl TryFrom<&[String]> for PhoneCall {
         if let Ok(when) = NaiveDateTime::parse_from_str(&value[3], "%H:%M:%S - %d:%m:%Y") {
             Ok(PhoneCall { who, when })
         } else {
+            warn!("Couldn't parse date {}", &value[3]);
             Err(())
         }
     }
@@ -84,6 +85,7 @@ impl TryFrom<Vec<String>> for LineStats {
         if let (Some(download), Some(upload)) = (download, upload) {
             Ok(LineStats { download, upload })
         } else {
+            warn!("Couldn't parse download {} or upload {}", &value[1], &value[2]);
             Err(())
         }
     }
