@@ -131,6 +131,24 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
     }
 }
 
+async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
+    println!("Starting - monitor_speed");
+
+    loop {
+        println!("Checking stats");
+
+        if let Some(stats) = timm::download_stats().await {
+            if let Err(_) = bot.send_message(chat_id, format!("{}", stats)).await {
+                println!("Couldn't send monitor_speed message.");
+            }
+        } else {
+            println!("Problem getting stats");
+        }
+
+        sleep(Duration::from_secs(10 * 60)).await;
+    }
+}
+
 async fn answer(
     bot: AutoSend<Bot>,
     message: Message,
@@ -171,10 +189,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let chat_id: i64 = envmnt::get_parse("CHAT_ID").unwrap();
 
     let bot = Bot::from_env().auto_send();
+    let bot_clone = bot.clone();
     let handler = teloxide::repls2::commands_repl(bot.clone(), answer, Command::ty());
 
     let tasks = vec![
-        tokio::spawn(async move { monitor_calls(bot.clone(), chat_id).await }),
+        tokio::spawn(async move { monitor_calls(bot, chat_id).await }),
+        tokio::spawn(async move { monitor_speed(bot_clone, chat_id).await }),
         tokio::spawn(async move { handler.await }),
     ];
 
