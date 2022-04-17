@@ -50,7 +50,7 @@ impl Display for LineStats {
 
         write!(
             f,
-            "{}🔺 {}\n🔻 {}",
+            "{}🔻 {}kbps\n🔺 {}kbps",
             if ratio < 1 {
                 "⚠️ Download speed is lower than upload speed, please reboot!\n"
             } else if ratio < 2 {
@@ -58,8 +58,8 @@ impl Display for LineStats {
             } else {
                 ""
             },
-            self.upload,
-            self.download
+            self.download,
+            self.upload
         )
     }
 }
