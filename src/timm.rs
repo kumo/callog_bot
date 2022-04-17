@@ -83,6 +83,7 @@ impl TryFrom<Vec<String>> for LineStats {
         let upload = parse_int(&value[2]);
 
         if let (Some(download), Some(upload)) = (download, upload) {
+            debug!("Creating now stats: {}, {}", download, upload);
             Ok(LineStats { download, upload })
         } else {
             warn!("Couldn't parse download {} or upload {}", &value[1], &value[2]);
@@ -154,16 +155,19 @@ pub fn get_new_calls(
 ) -> Option<Vec<PhoneCall>> {
     // There are no phone calls, so there are no new calls
     if phone_calls.is_empty() {
+        debug!("No phone calls");
         return None;
     }
 
     // There is no last phone call, so all of the calls are new calls
     if let None = last_call {
+        debug!("No last call, returning all calls.");
         return Some(phone_calls);
     }
 
     // The last call is the same as the other calls
     if phone_calls.first() == last_call.as_ref() {
+        debug!("Latest phone call is same, returning none.");
         return None;
     }
 
@@ -172,8 +176,10 @@ pub fn get_new_calls(
         .into_iter()
         .position(|x| &x == last_call.as_ref().unwrap())
     {
+        debug!("Last phone call found, returning some calls 0..{}", index_element);
         return Some(phone_calls[0..index_element].to_vec());
     } else {
+        debug!("Last phone call not found, returning all calls.");
         return Some(phone_calls);
     }
 }
