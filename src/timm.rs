@@ -48,19 +48,19 @@ impl Display for LineStats {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let ratio = self.download / self.upload;
 
-        if ratio < 1 {
-            write!(
-                f,
-                "⚠️ Download speed is lower than upload speed, please reboot!"
-            )
-        } else if ratio < 2 {
-            write!(
-                f,
-                "⚠️ Download speed is similar to upload speed, maybe reboot!"
-            )
-        } else {
-            write!(f, "Internet connect seems fine.")
-        }
+        write!(
+            f,
+            "{}🔺 {}\n🔻 {}",
+            if ratio < 1 {
+                "⚠️ Download speed is lower than upload speed, please reboot!\n"
+            } else if ratio < 2 {
+                "⚠️ Download speed is similar to upload speed, maybe reboot!\n"
+            } else {
+                ""
+            },
+            self.upload,
+            self.download
+        )
     }
 }
 
