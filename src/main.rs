@@ -140,8 +140,29 @@ async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
         println!("Checking stats");
 
         if let Some(stats) = timm::download_stats().await {
-            if let Err(_) = bot.send_message(chat_id, format!("{}", stats)).await {
-                println!("Couldn't send monitor_speed message.");
+            let ratio = stats.download / stats.upload;
+
+            if ratio < 1 {
+                if let Err(_) = bot
+                    .send_message(
+                        chat_id,
+                        "⚠️ Download speed is lower than upload speed, please reboot!",
+                    )
+                    .await
+                {
+                    println!("Couldn't send monitor_speed message.");
+                }
+            } else if ratio < 2 {
+                if let Err(_) = bot
+                    .send_message(
+                        chat_id,
+                        "⚠️ Download speed is similar to upload speed, maybe reboot!",
+                    )
+                    .await
+                {
+                    println!("Couldn't send monitor_speed message.");
+                }
+            } else {
             }
         } else {
             println!("Problem getting stats");
