@@ -96,7 +96,10 @@ impl TryFrom<Vec<String>> for LineStats {
             debug!("Creating now stats: {}, {}", download, upload);
             Ok(LineStats { download, upload })
         } else {
-            warn!("Couldn't parse download {} or upload {}", &value[1], &value[2]);
+            warn!(
+                "Couldn't parse download {} or upload {}",
+                &value[1], &value[2]
+            );
             Err(())
         }
     }
@@ -186,7 +189,10 @@ pub fn get_new_calls(
         .into_iter()
         .position(|x| &x == last_call.as_ref().unwrap())
     {
-        debug!("Last phone call found, returning some calls 0..{}", index_element);
+        debug!(
+            "Last phone call found, returning some calls 0..{}",
+            index_element
+        );
         return Some(phone_calls[0..index_element].to_vec());
     } else {
         debug!("Last phone call not found, returning all calls.");
