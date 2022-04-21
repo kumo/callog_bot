@@ -8,6 +8,16 @@ pub struct PhoneCall {
     pub when: NaiveDateTime,
 }
 
+impl PhoneCall {
+    pub fn is_today(&self) -> bool {
+        Utc::now()
+            .naive_utc()
+            .signed_duration_since(self.when)
+            .num_days()
+            == 0
+    }
+}
+
 impl Display for PhoneCall {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let diff = Utc::now().naive_utc() - self.when;

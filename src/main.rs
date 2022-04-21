@@ -69,13 +69,7 @@ async fn list_recent_calls(bot: AutoSend<Bot>, chat_id: i64) {
         .await
         .unwrap_or(Vec::new())
         .into_iter()
-        .filter(|phone_call| {
-            Utc::now()
-                .naive_utc()
-                .signed_duration_since(phone_call.when)
-                .num_days()
-                < 1
-        })
+        .filter(|phone_call| phone_call.is_today())
         .collect();
 
     debug!("There are {} recent phone calls.", recent_phone_calls.len());
