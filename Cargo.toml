@@ -11,7 +11,6 @@ chrono = "0.4"
 tokio = { version =  "1.8", features = ["rt-multi-thread", "macros", "time"] }
 futures = "*"
 teloxide = { version = "0.7", features = ["macros", "auto-send"] }
-envmnt = "^0.9.1"
 dotenv = "*"
 visdom = "*"
 log = "0.4"

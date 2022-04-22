@@ -1,5 +1,6 @@
 use chrono::Utc;
 use dotenv;
+use std::env;
 use std::error::Error;
 use teloxide::{prelude2::*, utils::command::BotCommand};
 use tokio::time::{sleep, Duration};
@@ -185,7 +186,7 @@ async fn answer(
     message: Message,
     command: Command,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let chat_id: i64 = envmnt::get_parse("CHAT_ID").unwrap();
+    let chat_id: i64 = env::var("CHAT_ID").expect("CHAT_ID must be set").parse()?;
 
     if message.chat.id != chat_id {
         bot.send_message(message.chat.id, "I shouldn't speak to strangers.")
@@ -221,7 +222,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     pretty_env_logger::init();
     dotenv::dotenv().ok();
 
-    let chat_id: i64 = envmnt::get_parse("CHAT_ID").unwrap();
+    let chat_id: i64 = env::var("CHAT_ID").expect("CHAT_ID must be set").parse()?;
 
     let bot = Bot::from_env().auto_send();
     let bot_clone = bot.clone();
