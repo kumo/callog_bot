@@ -1,4 +1,3 @@
-use chrono::Utc;
 use dotenv;
 use std::env;
 use std::error::Error;
