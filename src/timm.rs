@@ -50,27 +50,39 @@ impl TryFrom<&[String]> for PhoneCall {
     }
 }
 
+#[derive(PartialEq)]
+pub enum LineSpeed {
+    Bad,
+    Slow,
+    Normal,
+}
+
 pub struct LineStats {
     pub upload: u32,
     pub download: u32,
+    pub speed: LineSpeed,
 }
 
 impl Display for LineStats {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let ratio = self.download / self.upload;
-
         write!(
             f,
             "{}🔻 {}kbps\n🔺 {}kbps",
-            if ratio < 1 {
-                "⚠️ Download speed is lower than upload speed, please reboot!\n"
-            } else if ratio < 2 {
-                "⚠️ Download speed is similar to upload speed, maybe reboot!\n"
-            } else {
-                ""
-            },
-            self.download,
-            self.upload
+            self.speed, self.download, self.upload
+        )
+    }
+}
+
+impl Display for LineSpeed {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                LineSpeed::Bad => "⚠️ Download speed is lower than upload speed, please reboot!\n",
+                LineSpeed::Slow => "⚠️ Download speed is similar to upload speed, maybe reboot!\n",
+                LineSpeed::Normal => "",
+            }
         )
     }
 }
@@ -85,6 +97,18 @@ fn parse_int(input: &str) -> Option<u32> {
         })
 }
 
+impl From<u32> for LineSpeed {
+    fn from(value: u32) -> Self {
+        if value < 1 {
+            LineSpeed::Bad
+        } else if value < 2 {
+            LineSpeed::Slow
+        } else {
+            LineSpeed::Normal
+        }
+    }
+}
+
 impl TryFrom<Vec<String>> for LineStats {
     type Error = ();
 
@@ -94,7 +118,13 @@ impl TryFrom<Vec<String>> for LineStats {
 
         if let (Some(download), Some(upload)) = (download, upload) {
             debug!("Creating now stats: {}, {}", download, upload);
-            Ok(LineStats { download, upload })
+            let ratio = download / upload;
+
+            Ok(LineStats {
+                download,
+                upload,
+                speed: LineSpeed::from(ratio),
+            })
         } else {
             warn!(
                 "Couldn't parse download {} or upload {}",
