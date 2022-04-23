@@ -141,17 +141,12 @@ async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
 
         if let Some(stats) = timm::download_stats().await {
             if stats.speed != last_speed {
-                if stats.speed != timm::LineSpeed::Normal {
-                    debug!("Speed is not normal");
-                    if let Err(_) = bot.send_message(chat_id, format!("{}", stats.speed)).await {
-                        warn!("Couldn't send monitor_speed message.");
-                    }
-
-                    last_speed = stats.speed;
-                } else {
-                    debug!("Speed is back to normal");
-                    last_speed = timm::LineSpeed::Normal;
+                if let Err(_) = bot.send_message(chat_id, format!("{}", stats.speed)).await {
+                    warn!("Couldn't send monitor_speed message.");
                 }
+
+                debug!("{}", stats.speed);
+                last_speed = stats.speed;
             } else {
                 debug!("Skipping same speed state");
             }

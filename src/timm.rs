@@ -81,7 +81,7 @@ impl Display for LineSpeed {
             match self {
                 LineSpeed::Bad => "⚠️ Download speed is lower than upload speed, please reboot!\n",
                 LineSpeed::Slow => "⚠️ Download speed is similar to upload speed, maybe reboot!\n",
-                LineSpeed::Normal => "",
+                LineSpeed::Normal => "Download speed seems normal.\n",
             }
         )
     }
