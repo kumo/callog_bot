@@ -8,8 +8,11 @@ extern crate pretty_env_logger;
 #[macro_use]
 extern crate log;
 
-mod timm;
-use timm::PhoneCall;
+extern crate callog_bot;
+use callog_bot::timm::{self, calls::PhoneCall};
+
+//mod timm;
+//use timm::PhoneCall;
 
 #[derive(BotCommand, Clone)]
 #[command(rename = "lowercase", description = "These commands are supported:")]
@@ -27,7 +30,7 @@ enum Command {
 }
 
 async fn list_all_calls(bot: AutoSend<Bot>, chat_id: i64) {
-    if let Some(mut phone_calls) = timm::download_calls().await {
+    if let Some(mut phone_calls) = timm::calls::download_calls().await {
         if phone_calls.is_empty() {
             if let Err(_) = bot
                 .send_message(
@@ -65,7 +68,7 @@ async fn list_all_calls(bot: AutoSend<Bot>, chat_id: i64) {
 }
 
 async fn list_recent_calls(bot: AutoSend<Bot>, chat_id: i64) {
-    let mut recent_phone_calls: Vec<PhoneCall> = timm::download_calls()
+    let mut recent_phone_calls: Vec<PhoneCall> = timm::calls::download_calls()
         .await
         .unwrap_or(Vec::new())
         .into_iter()
@@ -104,9 +107,9 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
     loop {
         info!("Checking calls");
 
-        let latest_calls = timm::download_calls()
+        let latest_calls = timm::calls::download_calls()
             .await
-            .and_then(|calls| timm::get_new_calls(&last_call, calls));
+            .and_then(|calls| timm::calls::get_new_calls(&last_call, calls));
 
         if let Some(mut latest_calls) = latest_calls {
             debug!("There are new calls");
@@ -134,12 +137,12 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
 async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
     info!("Starting - monitor_speed");
 
-    let mut last_speed = timm::LineSpeed::Normal;
+    let mut last_speed = timm::stats::LineSpeed::Normal;
 
     loop {
         info!("Checking stats");
 
-        if let Some(stats) = timm::download_stats().await {
+        if let Some(stats) = timm::stats::download_stats().await {
             if stats.speed != last_speed {
                 if let Err(_) = bot.send_message(chat_id, format!("{}", stats.speed)).await {
                     warn!("Couldn't send monitor_speed message.");
@@ -159,7 +162,7 @@ async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
 }
 
 async fn list_speed(bot: AutoSend<Bot>, chat_id: i64) {
-    if let Some(stats) = timm::download_stats().await {
+    if let Some(stats) = timm::stats::download_stats().await {
         if let Err(_) = bot.send_message(chat_id, format!("{}", stats)).await {
             warn!("Couldn't send list_speed message.");
         }
