@@ -9,7 +9,8 @@ extern crate pretty_env_logger;
 extern crate log;
 
 extern crate callog_bot;
-use callog_bot::timm::{self, calls::PhoneCall};
+use callog_bot::timm;
+use callog_bot::timm::{calls::PhoneCall, stats::LineSpeed};
 
 //mod timm;
 //use timm::PhoneCall;
@@ -137,7 +138,7 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
 async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
     info!("Starting - monitor_speed");
 
-    let mut last_speed = timm::stats::LineSpeed::Normal;
+    let mut last_speed = LineSpeed::Normal;
 
     loop {
         info!("Checking stats");
