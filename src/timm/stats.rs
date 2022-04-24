@@ -1,13 +1,14 @@
 use std::fmt::{Display, Formatter};
 use visdom::Vis;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum LineSpeed {
     Bad,
     Slow,
     Normal,
 }
 
+#[derive(PartialEq, Debug)]
 pub struct LineStats {
     pub upload: u32,
     pub download: u32,
@@ -64,18 +65,26 @@ impl TryFrom<Vec<String>> for LineStats {
     type Error = ();
 
     fn try_from(value: Vec<String>) -> Result<Self, Self::Error> {
+        if value.len() < 3 {
+            return Err(());
+        }
+
         let download = parse_int(&value[1]);
         let upload = parse_int(&value[2]);
 
         if let (Some(download), Some(upload)) = (download, upload) {
             debug!("Creating now stats: {}, {}", download, upload);
-            let ratio = download / upload;
+            if upload < 1 {
+                Err(())
+            } else {
+                let ratio = download / upload;
 
-            Ok(LineStats {
-                download,
-                upload,
-                speed: LineSpeed::from(ratio),
-            })
+                Ok(LineStats {
+                    download,
+                    upload,
+                    speed: LineSpeed::from(ratio),
+                })
+            }
         } else {
             warn!(
                 "Couldn't parse download {} or upload {}",
@@ -119,4 +128,66 @@ pub async fn download_stats() -> Option<LineStats> {
     //         println!("Download speed is slower but also similar to upload speed.");
     //     }
     // }
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn test_no_stats() {
+        let stats = LineStats::try_from(Vec::new());
+
+        assert_eq!(stats.is_err(), true);
+    }
+
+    #[test]
+    fn test_no_number_stats() {
+        let stats = LineStats::try_from(vec![
+            "one".to_string(),
+            "two".to_string(),
+            "three".to_string(),
+        ]);
+
+        assert_eq!(stats.is_err(), true);
+    }
+
+    #[test]
+    fn test_equal_number_stats() {
+        let stats = LineStats::try_from(vec!["1".to_string(), "1".to_string(), "1".to_string()]);
+
+        assert_eq!(stats.is_ok(), true);
+        assert_eq!(
+            stats,
+            Ok(LineStats {
+                upload: 1,
+                download: 1,
+                speed: LineSpeed::Slow
+            })
+        );
+    }
+
+    #[test]
+    fn test_zero_upload_stats() {
+        let stats = LineStats::try_from(vec!["0".to_string(), "0".to_string(), "0".to_string()]);
+
+        assert_eq!(stats.is_ok(), false);
+        assert_eq!(stats, Err(()));
+    }
+
+    #[test]
+    fn test_equal_stats() {
+        let stats = LineStats::try_from(vec!["5".to_string(), "5".to_string(), "5".to_string()]);
+
+        assert_eq!(stats.is_ok(), true);
+        assert_eq!(
+            stats,
+            Ok(LineStats {
+                upload: 5,
+                download: 5,
+                speed: LineSpeed::Slow
+            })
+        );
+    }
 }
