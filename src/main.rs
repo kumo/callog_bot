@@ -158,7 +158,7 @@ async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
             warn!("Problem getting stats");
         }
 
-        sleep(Duration::from_secs(10 * 60)).await;
+        sleep(Duration::from_secs(5 * 60)).await;
     }
 }
 
