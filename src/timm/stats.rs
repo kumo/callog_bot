@@ -190,4 +190,23 @@ mod tests {
             })
         );
     }
+
+    #[test]
+    fn test_normal_stats() {
+        let stats = LineStats::try_from(vec![
+            "1.2.3.4".to_string(),
+            "12945kbps".to_string(),
+            "3143kbps".to_string(),
+        ]);
+
+        assert_eq!(stats.is_ok(), true);
+        assert_eq!(
+            stats,
+            Ok(LineStats {
+                upload: 3143,
+                download: 12945,
+                speed: LineSpeed::Normal
+            })
+        );
+    }
 }
