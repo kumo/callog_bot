@@ -18,6 +18,16 @@ impl PhoneCall {
     }
 }
 
+impl PhoneCall {
+    pub fn is_recent(&self) -> bool {
+        Utc::now()
+            .naive_utc()
+            .signed_duration_since(self.when)
+            .num_minutes()
+            <= 20
+    }
+}
+
 impl Display for PhoneCall {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let diff = Utc::now().naive_utc() - self.when;
@@ -82,10 +92,17 @@ pub fn get_new_calls(
         return None;
     }
 
-    // There is no last phone call, so all of the calls are new calls
+    // There is no last phone call, so all of the calls are new calls,
+    // but only return today's calls
     if let None = last_call {
-        debug!("No last call, returning all calls.");
-        return Some(phone_calls);
+        debug!("No last call, returning today's calls.");
+        // TODO return today's calls
+        let today_calls: Vec<PhoneCall> = phone_calls
+            .into_iter()
+            .filter(|phone_call| phone_call.is_recent())
+            .collect();
+
+        return Some(today_calls);
     }
 
     // The last call is the same as the other calls
@@ -112,6 +129,8 @@ pub fn get_new_calls(
 
 #[cfg(test)]
 mod tests {
+    use chrono::Duration;
+
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
 
@@ -130,6 +149,28 @@ mod tests {
         let calls: Vec<PhoneCall> = vec![new_call.clone()];
 
         assert_eq!(get_new_calls(&None, calls.clone()), Some(calls));
+    }
+
+    #[test]
+    fn test_no_last_return_recent_calls() {
+        let new_call: PhoneCall = PhoneCall {
+            who: "new call".to_string(),
+            when: Utc::now().naive_utc(),
+        };
+        let old_call: PhoneCall = PhoneCall {
+            who: "old call".to_string(),
+            when: Utc::now()
+                .checked_sub_signed(Duration::seconds(60 * 31))
+                .unwrap()
+                .naive_utc(),
+        };
+
+        let calls: Vec<PhoneCall> = vec![new_call.clone(), old_call.clone()];
+
+        assert_eq!(
+            get_new_calls(&None, calls.clone()),
+            Some(vec![new_call.clone()])
+        );
     }
 
     #[test]
