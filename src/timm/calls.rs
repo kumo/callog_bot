@@ -93,16 +93,16 @@ pub fn get_new_calls(
     }
 
     // There is no last phone call, so all of the calls are new calls,
-    // but only return today's calls
+    // but only return the recent calls
     if let None = last_call {
-        debug!("No last call, returning today's calls.");
+        debug!("No last call, returning recent calls.");
         // TODO return today's calls
-        let today_calls: Vec<PhoneCall> = phone_calls
+        let recent_calls: Vec<PhoneCall> = phone_calls
             .into_iter()
             .filter(|phone_call| phone_call.is_recent())
             .collect();
 
-        return Some(today_calls);
+        return Some(recent_calls);
     }
 
     // The last call is the same as the other calls
