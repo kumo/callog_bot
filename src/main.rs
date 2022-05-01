@@ -139,6 +139,7 @@ async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
     info!("Starting - monitor_speed");
 
     let mut last_speed = LineSpeed::Normal;
+    let mut last_ip = String::new();
 
     loop {
         info!("Checking stats");
@@ -146,13 +147,29 @@ async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
         if let Some(stats) = timm::stats::download_stats().await {
             if stats.speed != last_speed {
                 if let Err(_) = bot.send_message(chat_id, format!("{}", stats.speed)).await {
-                    warn!("Couldn't send monitor_speed message.");
+                    warn!("Couldn't send monitor_speed (speed) message.");
                 }
 
                 debug!("{}", stats.speed);
                 last_speed = stats.speed;
             } else {
                 debug!("Skipping same speed state");
+            }
+
+            // NOTE: I am only adding this temporarily, because I want to see how often the IP address
+            // changes throughout the day, and perhaps the connection is automatically resetting
+            if stats.ip != last_ip {
+                if let Err(_) = bot
+                    .send_message(chat_id, format!("IP is {}", stats.ip))
+                    .await
+                {
+                    warn!("Couldn't send monitor_speed (ip) message.");
+                }
+
+                debug!("{}", stats.ip);
+                last_ip = stats.ip;
+            } else {
+                debug!("Skipping same ip");
             }
         } else {
             warn!("Problem getting stats");

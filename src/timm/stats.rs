@@ -10,6 +10,7 @@ pub enum LineSpeed {
 
 #[derive(PartialEq, Debug)]
 pub struct LineStats {
+    pub ip: String,
     pub upload: u32,
     pub download: u32,
     pub speed: LineSpeed,
@@ -79,7 +80,10 @@ impl TryFrom<Vec<String>> for LineStats {
             } else {
                 let ratio = download / upload;
 
+                let ip = value[0].to_string();
+
                 Ok(LineStats {
+                    ip,
                     download,
                     upload,
                     speed: LineSpeed::from(ratio),
@@ -161,6 +165,7 @@ mod tests {
         assert_eq!(
             stats,
             Ok(LineStats {
+                ip: String::from("1"),
                 upload: 1,
                 download: 1,
                 speed: LineSpeed::Slow
@@ -184,6 +189,7 @@ mod tests {
         assert_eq!(
             stats,
             Ok(LineStats {
+                ip: String::from("5"),
                 upload: 5,
                 download: 5,
                 speed: LineSpeed::Slow
@@ -203,6 +209,7 @@ mod tests {
         assert_eq!(
             stats,
             Ok(LineStats {
+                ip: String::from("1.2.3.4"),
                 upload: 3143,
                 download: 12945,
                 speed: LineSpeed::Normal
