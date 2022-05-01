@@ -28,6 +28,8 @@ enum Command {
     All,
     #[command(description = "display current speed.")]
     Speed,
+    #[command(description = "reboot the modem.")]
+    Reboot,
 }
 
 async fn list_all_calls(bot: AutoSend<Bot>, chat_id: i64) {
@@ -189,6 +191,24 @@ async fn list_speed(bot: AutoSend<Bot>, chat_id: i64) {
     }
 }
 
+async fn reboot(bot: AutoSend<Bot>, chat_id: i64) {
+    if let Some(_) = timm::tools::reboot().await {
+        if let Err(_) = bot
+            .send_message(chat_id, "The modem should be rebooting.")
+            .await
+        {
+            warn!("Couldn't send should reboot message.");
+        }
+    } else {
+        if let Err(_) = bot
+            .send_message(chat_id, "The modem might be rebooting.")
+            .await
+        {
+            warn!("Couldn't send might reboot message.");
+        }
+    }
+}
+
 async fn answer(
     bot: AutoSend<Bot>,
     message: Message,
@@ -219,6 +239,9 @@ async fn answer(
         }
         Command::Speed => {
             list_speed(bot.clone(), chat_id).await;
+        }
+        Command::Reboot => {
+            reboot(bot.clone(), chat_id).await;
         }
     };
 
