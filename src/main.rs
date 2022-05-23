@@ -220,6 +220,8 @@ async fn answer(
         bot.send_message(message.chat.id, "I shouldn't speak to strangers.")
             .await?;
         debug!("I shouldn't talk to strangers: {}", message.chat.id);
+
+        return Ok(());
     }
 
     match command {
