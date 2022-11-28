@@ -1,14 +1,14 @@
 use std::fmt::{Display, Formatter};
 use visdom::Vis;
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum LineSpeed {
     Bad,
     Slow,
     Normal,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub struct LineStats {
     pub ip: String,
     pub upload: u32,
@@ -43,8 +43,8 @@ impl Display for LineSpeed {
 fn parse_int(input: &str) -> Option<u32> {
     input
         .chars()
-        .skip_while(|ch| !ch.is_digit(10))
-        .take_while(|ch| ch.is_digit(10))
+        .skip_while(|ch| !ch.is_ascii_digit())
+        .take_while(|ch| ch.is_ascii_digit())
         .fold(None, |acc, ch| {
             ch.to_digit(10).map(|b| acc.unwrap_or(0) * 10 + b)
         })
@@ -119,7 +119,7 @@ pub async fn download_stats() -> Option<LineStats> {
     debug!("Download: {}", texts[1]);
     debug!("Upload: {}", texts[2]);
 
-    return LineStats::try_from(texts).ok();
+    LineStats::try_from(texts).ok()
 
     // if texts[1].len() > texts[2].len() {
     //     println!("Download speed is faster than upload speed.");

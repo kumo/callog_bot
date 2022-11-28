@@ -1,4 +1,4 @@
-use dotenv;
+
 use std::env;
 use std::error::Error;
 use teloxide::{prelude2::*, utils::command::BotCommand};
@@ -73,7 +73,7 @@ async fn list_all_calls(bot: AutoSend<Bot>, chat_id: i64) {
 async fn list_recent_calls(bot: AutoSend<Bot>, chat_id: i64) {
     let mut recent_phone_calls: Vec<PhoneCall> = timm::calls::download_calls()
         .await
-        .unwrap_or(Vec::new())
+        .unwrap_or_default()
         .into_iter()
         .filter(|phone_call| phone_call.is_today())
         .collect();
@@ -199,13 +199,11 @@ async fn reboot(bot: AutoSend<Bot>, chat_id: i64) {
         {
             warn!("Couldn't send should reboot message.");
         }
-    } else {
-        if let Err(_) = bot
-            .send_message(chat_id, "The modem might be rebooting.")
-            .await
-        {
-            warn!("Couldn't send might reboot message.");
-        }
+    } else if let Err(_) = bot
+        .send_message(chat_id, "The modem might be rebooting.")
+        .await
+    {
+        warn!("Couldn't send might reboot message.");
     }
 }
 

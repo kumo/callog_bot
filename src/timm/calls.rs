@@ -38,7 +38,7 @@ impl Display for PhoneCall {
                 f,
                 "☎️ {}\n👉 {}",
                 self.who,
-                self.when.format("around %l%P on %-d %b").to_string()
+                self.when.format("around %l%P on %-d %b")
             )
         } else {
             write!(f, "☎️ {}", self.who)
@@ -79,7 +79,7 @@ pub async fn download_calls() -> Option<Vec<PhoneCall>> {
         .filter_map(|data| PhoneCall::try_from(data).ok())
         .collect();
 
-    return Some(phone_calls);
+    Some(phone_calls)
 }
 
 pub fn get_new_calls(
@@ -94,7 +94,7 @@ pub fn get_new_calls(
 
     // There is no last phone call, so all of the calls are new calls,
     // but only return the recent calls
-    if let None = last_call {
+    if last_call.is_none() {
         debug!("No last call, returning recent calls.");
         // TODO return today's calls
         let recent_calls: Vec<PhoneCall> = phone_calls
@@ -120,10 +120,10 @@ pub fn get_new_calls(
             "Last phone call found, returning some calls 0..{}",
             index_element
         );
-        return Some(phone_calls[0..index_element].to_vec());
+        Some(phone_calls[0..index_element].to_vec())
     } else {
         debug!("Last phone call not found, returning all calls.");
-        return Some(phone_calls);
+        Some(phone_calls)
     }
 }
 
@@ -146,7 +146,7 @@ mod tests {
             when: Utc::now().naive_utc(),
         };
 
-        let calls: Vec<PhoneCall> = vec![new_call.clone()];
+        let calls: Vec<PhoneCall> = vec![new_call];
 
         assert_eq!(get_new_calls(&None, calls.clone()), Some(calls));
     }
@@ -165,11 +165,11 @@ mod tests {
                 .naive_utc(),
         };
 
-        let calls: Vec<PhoneCall> = vec![new_call.clone(), old_call.clone()];
+        let calls: Vec<PhoneCall> = vec![new_call.clone(), old_call];
 
         assert_eq!(
-            get_new_calls(&None, calls.clone()),
-            Some(vec![new_call.clone()])
+            get_new_calls(&None, calls),
+            Some(vec![new_call])
         );
     }
 
@@ -198,7 +198,7 @@ mod tests {
             who: "new call 2".to_string(),
             when: Utc::now().naive_utc(),
         };
-        let calls: Vec<PhoneCall> = vec![new_call_1.clone(), new_call_2.clone()];
+        let calls: Vec<PhoneCall> = vec![new_call_1, new_call_2];
 
         assert_eq!(get_new_calls(&Some(last_call), calls.clone()), Some(calls));
     }
@@ -214,9 +214,9 @@ mod tests {
             when: Utc::now().naive_utc(),
         };
 
-        let calls: Vec<PhoneCall> = vec![last_call.clone(), old_call.clone()];
+        let calls: Vec<PhoneCall> = vec![last_call.clone(), old_call];
 
-        assert_eq!(get_new_calls(&Some(last_call), calls.clone()), None);
+        assert_eq!(get_new_calls(&Some(last_call), calls), None);
     }
 
     #[test]
@@ -246,13 +246,13 @@ mod tests {
             new_call_1.clone(),
             new_call_2.clone(),
             last_call.clone(),
-            old_call_1.clone(),
-            old_call_2.clone(),
+            old_call_1,
+            old_call_2,
         ];
 
         assert_eq!(
-            get_new_calls(&Some(last_call), calls.clone()),
-            Some(vec![new_call_1.clone(), new_call_2.clone()])
+            get_new_calls(&Some(last_call), calls),
+            Some(vec![new_call_1, new_call_2])
         );
     }
 
@@ -270,8 +270,8 @@ mod tests {
         let calls: Vec<PhoneCall> = vec![new_call.clone(), last_call.clone()];
 
         assert_eq!(
-            get_new_calls(&Some(last_call.clone()), calls),
-            Some(vec![new_call.clone()])
+            get_new_calls(&Some(last_call), calls),
+            Some(vec![new_call])
         );
     }
 }
