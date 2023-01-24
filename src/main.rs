@@ -1,7 +1,6 @@
 
 use std::env;
-use std::error::Error;
-use teloxide::{prelude2::*, utils::command::BotCommand};
+use teloxide::{prelude::*, utils::command::BotCommands};
 use tokio::time::{sleep, Duration};
 
 extern crate pretty_env_logger;
@@ -15,8 +14,8 @@ use callog_bot::timm::{calls::PhoneCall, stats::LineSpeed};
 //mod timm;
 //use timm::PhoneCall;
 
-#[derive(BotCommand, Clone)]
-#[command(rename = "lowercase", description = "These commands are supported:")]
+#[derive(BotCommands, Clone)]
+#[command(rename_rule = "lowercase", description = "These commands are supported:")]
 enum Command {
     #[command(description = "display this text.")]
     Help,
@@ -32,7 +31,7 @@ enum Command {
     Reboot,
 }
 
-async fn list_all_calls(bot: AutoSend<Bot>, chat_id: i64) {
+async fn list_all_calls(bot: Bot, chat_id: ChatId) {
     if let Some(mut phone_calls) = timm::calls::download_calls().await {
         if phone_calls.is_empty() {
             if let Err(_) = bot
@@ -70,7 +69,7 @@ async fn list_all_calls(bot: AutoSend<Bot>, chat_id: i64) {
     }
 }
 
-async fn list_recent_calls(bot: AutoSend<Bot>, chat_id: i64) {
+async fn list_recent_calls(bot: Bot, chat_id: ChatId) {
     let mut recent_phone_calls: Vec<PhoneCall> = timm::calls::download_calls()
         .await
         .unwrap_or_default()
@@ -102,7 +101,7 @@ async fn list_recent_calls(bot: AutoSend<Bot>, chat_id: i64) {
     }
 }
 
-async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
+async fn monitor_calls(bot: Bot, chat_id: ChatId) {
     info!("Starting - monitor_calls");
 
     let mut last_call: Option<PhoneCall> = None;
@@ -137,7 +136,7 @@ async fn monitor_calls(bot: AutoSend<Bot>, chat_id: i64) {
     }
 }
 
-async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
+async fn monitor_speed(bot: Bot, chat_id: ChatId) {
     info!("Starting - monitor_speed");
 
     let mut last_speed = LineSpeed::Normal;
@@ -181,7 +180,7 @@ async fn monitor_speed(bot: AutoSend<Bot>, chat_id: i64) {
     }
 }
 
-async fn list_speed(bot: AutoSend<Bot>, chat_id: i64) {
+async fn list_speed(bot: Bot, chat_id: ChatId) {
     if let Some(stats) = timm::stats::download_stats().await {
         if let Err(_) = bot.send_message(chat_id, format!("{}", stats)).await {
             warn!("Couldn't send list_speed message.");
@@ -191,7 +190,7 @@ async fn list_speed(bot: AutoSend<Bot>, chat_id: i64) {
     }
 }
 
-async fn reboot(bot: AutoSend<Bot>, chat_id: i64) {
+async fn reboot(bot: Bot, chat_id: ChatId) {
     if let Some(_) = timm::tools::reboot().await {
         if let Err(_) = bot
             .send_message(chat_id, "The modem should be rebooting.")
@@ -208,11 +207,15 @@ async fn reboot(bot: AutoSend<Bot>, chat_id: i64) {
 }
 
 async fn answer(
-    bot: AutoSend<Bot>,
+    bot: Bot,
     message: Message,
     command: Command,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
-    let chat_id: i64 = env::var("CHAT_ID").expect("CHAT_ID must be set").parse()?;
+) -> ResponseResult<()> {
+    let chat_id = if let Ok(chat_id) = env::var("CHAT_ID").expect("CHAT_ID must be set").parse() {
+        ChatId(chat_id)
+    } else {
+        return Ok(());
+    };
 
     if message.chat.id != chat_id {
         bot.send_message(message.chat.id, "I shouldn't speak to strangers.")
@@ -224,7 +227,7 @@ async fn answer(
 
     match command {
         Command::Help => {
-            if let Err(_) = bot.send_message(chat_id, Command::descriptions()).await {
+            if let Err(_) = bot.send_message(chat_id, Command::descriptions().to_string()).await {
                 warn!("Couldn't send answer message.");
             }
         }
@@ -253,11 +256,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     pretty_env_logger::init();
     dotenv::dotenv().ok();
 
-    let chat_id: i64 = env::var("CHAT_ID").expect("CHAT_ID must be set").parse()?;
+    let chat_id: ChatId = ChatId(env::var("CHAT_ID").expect("CHAT_ID must be set").parse()?);
 
-    let bot = Bot::from_env().auto_send();
+    let bot = Bot::from_env();
     let bot_clone = bot.clone();
-    let handler = teloxide::repls2::commands_repl(bot.clone(), answer, Command::ty());
+    let handler = Command::repl(bot.clone(), answer);
 
     let tasks = vec![
         tokio::spawn(async move { monitor_calls(bot, chat_id).await }),
