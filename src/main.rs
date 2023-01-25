@@ -258,17 +258,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let chat_id: ChatId = ChatId(env::var("CHAT_ID").expect("CHAT_ID must be set").parse()?);
 
-    let bot = Bot::from_env();
-    let bot_clone = bot.clone();
-    let handler = Command::repl(bot.clone(), answer);
+    // let bot = Bot::from_env();
+    // let bot_clone = bot.clone();
+    // let bot_clone_clone = bot.clone();
+    // let handler = Command::repl(bot.clone(), answer);
 
-    let tasks = vec![
-        tokio::spawn(async move { monitor_calls(bot, chat_id).await }),
-        tokio::spawn(async move { monitor_speed(bot_clone, chat_id).await }),
-        tokio::spawn(async move { handler.await }),
-    ];
-
-    futures::future::join_all(tasks).await;
+    tokio::select! {
+      _ = async move {loop {
+        let bot = Bot::from_env();
+        monitor_calls(bot, chat_id).await;
+        warn!("Restarting monitor_calls");
+      }} => {},
+      _ = async move {loop {
+        let bot = Bot::from_env();
+        monitor_speed(bot, chat_id).await;
+        warn!("Restarting monitor_speed");
+      }} => {},
+      _ = async {loop {
+        let bot = Bot::from_env();
+        Command::repl(bot, answer).await;
+        warn!("Restarting handler");
+      }} => {},
+    }
 
     Ok(())
 }
