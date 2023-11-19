@@ -34,12 +34,13 @@ enum Command {
 async fn list_all_calls(bot: Bot, chat_id: ChatId) {
     if let Some(mut phone_calls) = timm::calls::download_calls().await {
         if phone_calls.is_empty() {
-            if let Err(_) = bot
+            if bot
                 .send_message(
                     chat_id,
                     "There are no recent calls in memory -- was the modem recently rebooted?",
                 )
                 .await
+                .is_err()
             {
                 warn!("Couldn't send list_all_calls message.");
             }
@@ -50,7 +51,7 @@ async fn list_all_calls(bot: Bot, chat_id: ChatId) {
             for phone_call in &phone_calls {
                 debug!("{}", phone_call);
 
-                if let Err(_) = bot.send_message(chat_id, format!("{}", phone_call)).await {
+                if bot.send_message(chat_id, format!("{}", phone_call)).await.is_err() {
                     warn!("Couldn't send list_all_calls message.");
                 }
             }
@@ -60,9 +61,10 @@ async fn list_all_calls(bot: Bot, chat_id: ChatId) {
     } else {
         debug!("There might be no phone calls in memory.");
 
-        if let Err(_) = bot
+        if bot
             .send_message(chat_id, "Problem getting latest calls!")
             .await
+            .is_err()
         {
             warn!("Couldn't send list_all_calls message.");
         }
@@ -80,12 +82,13 @@ async fn list_recent_calls(bot: Bot, chat_id: ChatId) {
     debug!("There are {} recent phone calls.", recent_phone_calls.len());
 
     if recent_phone_calls.is_empty() {
-        if let Err(_) = bot
+        if bot
             .send_message(
                 chat_id,
                 "There are no recent calls in memory -- was the modem recently rebooted?",
             )
             .await
+            .is_err()
         {
             warn!("Couldn't send list_recent_calls message.");
         }
@@ -94,7 +97,7 @@ async fn list_recent_calls(bot: Bot, chat_id: ChatId) {
         for phone_call in &recent_phone_calls {
             debug!("{}", phone_call);
 
-            if let Err(_) = bot.send_message(chat_id, format!("{}", phone_call)).await {
+            if bot.send_message(chat_id, format!("{}", phone_call)).await.is_err() {
                 warn!("Couldn't send list_recent_calls message.");
             }
         }
@@ -120,7 +123,7 @@ async fn monitor_calls(bot: Bot, chat_id: ChatId) {
             for phone_call in &latest_calls {
                 debug!("{}", phone_call);
 
-                if let Err(_) = bot.send_message(chat_id, format!("{}", phone_call)).await {
+                if bot.send_message(chat_id, format!("{}", phone_call)).await.is_err() {
                     warn!("Couldn't send monitor_calls message.");
                 }
             }
@@ -147,7 +150,7 @@ async fn monitor_speed(bot: Bot, chat_id: ChatId) {
 
         if let Some(stats) = timm::stats::download_stats().await {
             if stats.speed != last_speed {
-                if let Err(_) = bot.send_message(chat_id, format!("{}", stats.speed)).await {
+                if bot.send_message(chat_id, format!("{}", stats.speed)).await.is_err() {
                     warn!("Couldn't send monitor_speed (speed) message.");
                 }
 
@@ -160,9 +163,10 @@ async fn monitor_speed(bot: Bot, chat_id: ChatId) {
             // NOTE: I am only adding this temporarily, because I want to see how often the IP address
             // changes throughout the day, and perhaps the connection is automatically resetting
             if stats.ip != last_ip {
-                if let Err(_) = bot
+                if bot
                     .send_message(chat_id, format!("IP is {}", stats.ip))
                     .await
+                    .is_err()
                 {
                     warn!("Couldn't send monitor_speed (ip) message.");
                 }
@@ -182,7 +186,7 @@ async fn monitor_speed(bot: Bot, chat_id: ChatId) {
 
 async fn list_speed(bot: Bot, chat_id: ChatId) {
     if let Some(stats) = timm::stats::download_stats().await {
-        if let Err(_) = bot.send_message(chat_id, format!("{}", stats)).await {
+        if bot.send_message(chat_id, format!("{}", stats)).await.is_err() {
             warn!("Couldn't send list_speed message.");
         }
     } else {
@@ -191,16 +195,18 @@ async fn list_speed(bot: Bot, chat_id: ChatId) {
 }
 
 async fn reboot(bot: Bot, chat_id: ChatId) {
-    if let Some(_) = timm::tools::reboot().await {
-        if let Err(_) = bot
+    if timm::tools::reboot().await.is_some() {
+        if bot
             .send_message(chat_id, "The modem should be rebooting.")
             .await
+            .is_err()
         {
             warn!("Couldn't send should reboot message.");
         }
-    } else if let Err(_) = bot
+    } else if bot
         .send_message(chat_id, "The modem might be rebooting.")
         .await
+        .is_err()
     {
         warn!("Couldn't send might reboot message.");
     }
@@ -227,7 +233,11 @@ async fn answer(
 
     match command {
         Command::Help => {
-            if let Err(_) = bot.send_message(chat_id, Command::descriptions().to_string()).await {
+            if bot
+                .send_message(chat_id, Command::descriptions().to_string())
+                .await
+                .is_err()
+            {
                 warn!("Couldn't send answer message.");
             }
         }

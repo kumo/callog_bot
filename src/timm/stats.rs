@@ -112,7 +112,7 @@ pub async fn download_stats() -> Option<LineStats> {
         .find("table.tablecontainttbl > tr > td.fcolor");
     debug!("There are {} matching cells.", tds.length());
 
-    let texts = tds.map(|_index, ele| String::from(Vis::dom(ele).text()));
+    let texts = tds.map(|_index, ele| Vis::dom(ele).text());
 
     // check the external IP and download/upload speeds
     debug!("IP: {}", texts[0]);

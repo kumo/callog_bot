@@ -73,7 +73,7 @@ pub async fn download_calls() -> Option<Vec<PhoneCall>> {
         .find("table.edittable > tr > td.fontSize");
 
     let phone_calls = tds
-        .map(|_index, ele| String::from(Vis::dom(ele).text()))
+        .map(|_index, ele| Vis::dom(ele).text())
         .chunks_exact(5)
         .filter(|data| data[2] == "Ingresso")
         .filter_map(|data| PhoneCall::try_from(data).ok())
