@@ -1,4 +1,3 @@
-
 use std::env;
 use teloxide::{prelude::*, utils::command::BotCommands};
 use tokio::time::{sleep, Duration};
@@ -15,7 +14,10 @@ use callog_bot::timm::{calls::PhoneCall, stats::LineSpeed};
 //use timm::PhoneCall;
 
 #[derive(BotCommands, Clone)]
-#[command(rename_rule = "lowercase", description = "These commands are supported:")]
+#[command(
+    rename_rule = "lowercase",
+    description = "These commands are supported:"
+)]
 enum Command {
     #[command(description = "display this text.")]
     Help,
@@ -51,7 +53,11 @@ async fn list_all_calls(bot: Bot, chat_id: ChatId) {
             for phone_call in &phone_calls {
                 debug!("{}", phone_call);
 
-                if bot.send_message(chat_id, format!("{}", phone_call)).await.is_err() {
+                if bot
+                    .send_message(chat_id, format!("{}", phone_call))
+                    .await
+                    .is_err()
+                {
                     warn!("Couldn't send list_all_calls message.");
                 }
             }
@@ -97,7 +103,11 @@ async fn list_recent_calls(bot: Bot, chat_id: ChatId) {
         for phone_call in &recent_phone_calls {
             debug!("{}", phone_call);
 
-            if bot.send_message(chat_id, format!("{}", phone_call)).await.is_err() {
+            if bot
+                .send_message(chat_id, format!("{}", phone_call))
+                .await
+                .is_err()
+            {
                 warn!("Couldn't send list_recent_calls message.");
             }
         }
@@ -123,7 +133,11 @@ async fn monitor_calls(bot: Bot, chat_id: ChatId) {
             for phone_call in &latest_calls {
                 debug!("{}", phone_call);
 
-                if bot.send_message(chat_id, format!("{}", phone_call)).await.is_err() {
+                if bot
+                    .send_message(chat_id, format!("{}", phone_call))
+                    .await
+                    .is_err()
+                {
                     warn!("Couldn't send monitor_calls message.");
                 }
             }
@@ -150,7 +164,11 @@ async fn monitor_speed(bot: Bot, chat_id: ChatId) {
 
         if let Some(stats) = timm::stats::download_stats().await {
             if stats.speed != last_speed {
-                if bot.send_message(chat_id, format!("{}", stats.speed)).await.is_err() {
+                if bot
+                    .send_message(chat_id, format!("{}", stats.speed))
+                    .await
+                    .is_err()
+                {
                     warn!("Couldn't send monitor_speed (speed) message.");
                 }
 
@@ -186,7 +204,11 @@ async fn monitor_speed(bot: Bot, chat_id: ChatId) {
 
 async fn list_speed(bot: Bot, chat_id: ChatId) {
     if let Some(stats) = timm::stats::download_stats().await {
-        if bot.send_message(chat_id, format!("{}", stats)).await.is_err() {
+        if bot
+            .send_message(chat_id, format!("{}", stats))
+            .await
+            .is_err()
+        {
             warn!("Couldn't send list_speed message.");
         }
     } else {
@@ -212,11 +234,7 @@ async fn reboot(bot: Bot, chat_id: ChatId) {
     }
 }
 
-async fn answer(
-    bot: Bot,
-    message: Message,
-    command: Command,
-) -> ResponseResult<()> {
+async fn answer(bot: Bot, message: Message, command: Command) -> ResponseResult<()> {
     let chat_id = if let Ok(chat_id) = env::var("CHAT_ID").expect("CHAT_ID must be set").parse() {
         ChatId(chat_id)
     } else {

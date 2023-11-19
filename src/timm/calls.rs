@@ -167,10 +167,7 @@ mod tests {
 
         let calls: Vec<PhoneCall> = vec![new_call.clone(), old_call];
 
-        assert_eq!(
-            get_new_calls(&None, calls),
-            Some(vec![new_call])
-        );
+        assert_eq!(get_new_calls(&None, calls), Some(vec![new_call]));
     }
 
     #[test]
@@ -269,9 +266,6 @@ mod tests {
 
         let calls: Vec<PhoneCall> = vec![new_call.clone(), last_call.clone()];
 
-        assert_eq!(
-            get_new_calls(&Some(last_call), calls),
-            Some(vec![new_call])
-        );
+        assert_eq!(get_new_calls(&Some(last_call), calls), Some(vec![new_call]));
     }
 }
